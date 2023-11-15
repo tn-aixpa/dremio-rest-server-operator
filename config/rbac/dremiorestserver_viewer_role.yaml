@@ -1,0 +1,27 @@
+# permissions for end users to view dremiorestservers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: dremiorestserver-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: dremio-rest-server-operator
+    app.kubernetes.io/part-of: dremio-rest-server-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: dremiorestserver-viewer-role
+rules:
+- apiGroups:
+  - operator.dremiorestserver.com
+  resources:
+  - dremiorestservers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.dremiorestserver.com
+  resources:
+  - dremiorestservers/status
+  verbs:
+  - get
