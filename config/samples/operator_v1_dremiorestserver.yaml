@@ -1,8 +1,7 @@
 apiVersion: operator.dremiorestserver.com/v1
 kind: DremioRestServer
 metadata:
-  name: drs-sample
+  name: drs
 spec:
   javaOptions: --add-opens=java.base/java.nio=ALL-UNNAMED
-  dremioUrl: 192.168.178.120:32010/?useEncryption=false&disableCertificateVerification=true&user=dremio&password=dremio123
-  tables: postgres_public.operator.test
+  tables: postgres.instagram.utenti

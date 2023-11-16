@@ -35,8 +35,6 @@ spec:
           spec:
             description: DremioRestServerSpec defines the desired state of DremioRestServer
             properties:
-              dremioUrl:
-                type: string
               javaOptions:
                 description: JAVA_TOOL_OPTIONS (on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED
                   is required)

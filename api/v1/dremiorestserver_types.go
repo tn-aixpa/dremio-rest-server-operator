@@ -30,9 +30,6 @@ type DremioRestServerSpec struct {
 	JavaOptions string `json:"javaOptions,omitempty"` // JAVA_TOOL_OPTIONS
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	DremioURL string `json:"dremioUrl,omitempty"` // DREMIO_URL
-
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Tables string `json:"tables,omitempty"` // DREMIO_TABLES (comma-separated)
 }
 

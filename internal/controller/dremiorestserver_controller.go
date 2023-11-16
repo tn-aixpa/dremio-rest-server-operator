@@ -18,6 +18,9 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -27,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,18 +39,13 @@ import (
 	operatorv1 "github.com/scc-digitalhub/dremio-rest-server-operator/api/v1"
 )
 
-//TODO
-// const postgrestImage = "POSTGREST_IMAGE"
-// const postgrestImageTag = "POSTGREST_IMAGE_TAG"
-// const postgrestServiceType = "POSTGREST_SERVICE_TYPE"
-// const postgrestDatabaseUri = "POSTGREST_DATABASE_URI"
+const dremioRestServerImage = "DRS_IMAGE"
+const dremioRestServerImageTag = "DRS_IMAGE_TAG"
+const dremioRestServerServiceType = "DRS_SERVICE_TYPE"
+const dremioRestServerUri = "DRS_DREMIO_URI"
 
-// TODO
 // Definitions to manage status conditions
 const (
-	// When anon role is being created, before deployment
-	typeInitializing = "Initializing"
-
 	// Launch deployment and service
 	typeDeploying = "Deploying"
 
@@ -64,13 +63,13 @@ type DremioRestServerReconciler struct {
 	Recorder record.EventRecorder
 }
 
+// TODO
 func formatResourceName(resourceName string) string {
 	return strings.Join([]string{"dremiorestserver", resourceName}, "-")
 }
 
 //+kubebuilder:rbac:groups=operator.dremiorestserver.com,namespace=mynamespace,resources=dremiorestservers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=operator.dremiorestserver.com,namespace=mynamespace,resources=dremiorestservers/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=core,namespace=mynamespace,resources=events,verbs=create;patch
 //+kubebuilder:rbac:groups=apps,namespace=mynamespace,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,namespace=mynamespace,resources=pods,verbs=get;list;watch
 //+kubebuilder:rbac:groups=core,namespace=mynamespace,resources=services,verbs=get;list;watch;create;update;patch;delete
@@ -115,7 +114,34 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if dremiorestserver.Status.State == typeDeploying {
 		log.Info("Deploying and creating service")
 
-		//TODO get/create secret
+		// Create secret
+		existingSecret := &corev1.Secret{}
+		err = r.Get(ctx, types.NamespacedName{Name: dremiorestserver.Name, Namespace: dremiorestserver.Namespace}, existingSecret)
+		if err != nil && apierrors.IsNotFound(err) {
+			// Create secret
+			secret, err := r.secretForDremiorestserver(dremiorestserver)
+			if err != nil {
+				log.Error(err, "Failed to define new Secret resource for DremioRestServer")
+
+				dremiorestserver.Status.State = typeError
+
+				if err := r.Status().Update(ctx, dremiorestserver); err != nil {
+					log.Error(err, "failed to update DremioRestServer status")
+					return ctrl.Result{}, err
+				}
+
+				return ctrl.Result{}, err
+			}
+			log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
+			if err = r.Create(ctx, secret); err != nil {
+				log.Error(err, "Failed to create new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
+				return ctrl.Result{}, err
+			}
+		} else if err != nil {
+			log.Error(err, "Failed to get secret")
+			// Return error for reconciliation to be re-trigged
+			return ctrl.Result{}, err
+		}
 
 		// Check if the deployment already exists, if not create a new one
 		found := &appsv1.Deployment{}
@@ -149,7 +175,33 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 
-		//TODO get/create service
+		// Create service
+		existingService := &corev1.Service{}
+		err = r.Get(ctx, types.NamespacedName{Name: dremiorestserver.Name, Namespace: dremiorestserver.Namespace}, existingService)
+		if err != nil && apierrors.IsNotFound(err) {
+			service, err := r.serviceForDremiorestserver(dremiorestserver)
+			if err != nil {
+				log.Error(err, "Service inizialition failed")
+
+				dremiorestserver.Status.State = typeError
+
+				if err := r.Status().Update(ctx, dremiorestserver); err != nil {
+					log.Error(err, "failed to update DremioRestServer status")
+					return ctrl.Result{}, err
+				}
+
+				return ctrl.Result{}, err
+			}
+			log.Info("Creating a new Service", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
+			if err = r.Create(ctx, service); err != nil {
+				log.Error(err, "Service creation failed")
+				return ctrl.Result{}, err
+			}
+		} else if err != nil {
+			log.Error(err, "failed to get service")
+			// Return error for reconciliation to be re-trigged
+			return ctrl.Result{}, err
+		}
 
 		dremiorestserver.Status.State = typeRunning
 		if err = r.Status().Update(ctx, dremiorestserver); err != nil {
@@ -203,7 +255,18 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if dremiorestserver.Status.State == typeError {
 		log.Info("Cleaning up secret, deployment and service")
 
-		//TODO delete service
+		// Delete service
+		service := &corev1.Service{}
+		err = r.Get(ctx, types.NamespacedName{Name: dremiorestserver.Name, Namespace: dremiorestserver.Namespace}, service)
+		if err == nil {
+			if err := r.Delete(ctx, service); err != nil {
+				log.Error(err, "Failed to clean up service")
+			}
+		} else if err != nil && !apierrors.IsNotFound(err) {
+			log.Error(err, "Failed to get service")
+			// Return error for reconciliation to be re-trigged
+			return ctrl.Result{}, err
+		}
 
 		// Delete deployment
 		deployment := &appsv1.Deployment{}
@@ -218,7 +281,18 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 
-		//TODO delete secret
+		// Delete secret
+		secret := &corev1.Secret{}
+		err = r.Get(ctx, types.NamespacedName{Name: dremiorestserver.Name, Namespace: dremiorestserver.Namespace}, secret)
+		if err == nil {
+			if err := r.Delete(ctx, secret); err != nil {
+				log.Error(err, "Failed to clean up secret")
+			}
+		} else if err != nil && !apierrors.IsNotFound(err) {
+			log.Error(err, "Failed to get secret")
+			// Return error for reconciliation to be re-trigged
+			return ctrl.Result{}, err
+		}
 
 		return ctrl.Result{}, nil
 	}
@@ -229,8 +303,19 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 // deploymentForDremiorestserver returns a DremioRestServer Deployment object
 func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 	dremiorestserver *operatorv1.DremioRestServer) (*appsv1.Deployment, error) {
-	image := "ghcr.io/scc-digitalhub/dremio-rest-server" //TODO
-	tag := "0.0.2-SNAPSHOT"                              //TODO
+	image, found := os.LookupEnv(dremioRestServerImage)
+	if !found {
+		image = "ghcr.io/scc-digitalhub/dremio-rest-server"
+	}
+	tag, found := os.LookupEnv(dremioRestServerImageTag)
+	if !found {
+		tag = "latest"
+	}
+
+	if dremiorestserver.Spec.Tables == "" {
+		return nil, errors.New("tables missing from spec")
+	}
+
 	ls := labelsForDremioRestServer(dremiorestserver.Name, tag)
 	selectors := selectorsForDremioRestServer(dremiorestserver.Name)
 
@@ -302,18 +387,20 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 							},
 							ReadOnlyRootFilesystem: &[]bool{true}[0],
 						},
-						Ports: []corev1.ContainerPort{{
-							ContainerPort: 8080,
-							Name:          "http",
-						}},
 						Env: []corev1.EnvVar{
 							{
 								Name:  "JAVA_TOOL_OPTIONS",
 								Value: dremiorestserver.Spec.JavaOptions,
 							},
 							{
-								Name:  "DREMIO_URL",
-								Value: dremiorestserver.Spec.DremioURL, //TODO from secret
+								Name: "DREMIO_URL",
+								ValueFrom: &corev1.EnvVarSource{
+									SecretKeyRef: &corev1.SecretKeySelector{
+										LocalObjectReference: corev1.LocalObjectReference{Name: dremiorestserver.Name},
+										Key:                  dremioRestServerUri,
+										Optional:             &[]bool{false}[0],
+									},
+								},
 							},
 							{
 								Name:  "DREMIO_TABLES",
@@ -334,7 +421,75 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 	return dep, nil
 }
 
-//TODO service, secret
+func (r *DremioRestServerReconciler) serviceForDremiorestserver(dremiorestserver *operatorv1.DremioRestServer) (*corev1.Service, error) {
+	tag, found := os.LookupEnv(dremioRestServerImageTag)
+	if !found {
+		tag = "latest"
+	}
+
+	var corev1ServiceType corev1.ServiceType
+	serviceType, found := os.LookupEnv(dremioRestServerServiceType)
+	if found && strings.EqualFold(serviceType, "ClusterIP") {
+		corev1ServiceType = corev1.ServiceTypeClusterIP
+	} else if !found || serviceType == "" || strings.EqualFold(serviceType, "NodePort") {
+		corev1ServiceType = corev1.ServiceTypeNodePort
+	} else {
+		return nil, errors.New("invalid service type")
+	}
+
+	ls := labelsForDremioRestServer(dremiorestserver.Name, tag)
+	selectors := selectorsForDremioRestServer(dremiorestserver.Name)
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dremiorestserver.Name,
+			Namespace: dremiorestserver.Namespace,
+			Labels:    ls,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: selectors,
+			Type:     corev1ServiceType,
+			Ports: []corev1.ServicePort{{
+				Protocol:   corev1.ProtocolTCP,
+				Port:       3000,
+				TargetPort: intstr.FromInt(8080),
+			}},
+		},
+	}
+
+	if err := ctrl.SetControllerReference(dremiorestserver, service, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return service, nil
+}
+
+func (r *DremioRestServerReconciler) secretForDremiorestserver(dremiorestserver *operatorv1.DremioRestServer) (*corev1.Secret, error) {
+	dremioUri, found := os.LookupEnv(dremioRestServerUri)
+	if !found {
+		return nil, fmt.Errorf("dremio URI not specified, environment variable %v is required", dremioRestServerUri)
+	}
+
+	tag, found := os.LookupEnv(dremioRestServerImageTag)
+	if !found {
+		tag = "latest"
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dremiorestserver.Name,
+			Namespace: dremiorestserver.Namespace,
+			Labels:    labelsForDremioRestServer(dremiorestserver.Name, tag),
+		},
+		StringData: map[string]string{dremioRestServerUri: dremioUri},
+	}
+
+	if err := ctrl.SetControllerReference(dremiorestserver, secret, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return secret, nil
+}
 
 // labelsForDremioRestServer returns the labels for selecting the resources
 // More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
