@@ -5,3 +5,9 @@ metadata:
 spec:
   javaOptions: --add-opens=java.base/java.nio=ALL-UNNAMED
   tables: postgres.instagram.utenti
+  # containerLimits:
+  #   cpu: 1000m
+  #   memory: 512Mi
+  # containerRequests:
+  #   cpu: 200m
+  #   memory: 128Mi

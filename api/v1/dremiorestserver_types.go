@@ -31,6 +31,24 @@ type DremioRestServerSpec struct {
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Tables string `json:"tables,omitempty"` // DREMIO_TABLES (comma-separated)
+
+	// Corresponds to resources.limits of a container
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	ContainerLimits Limits `json:"containerLimits,omitempty"`
+
+	// Corresponds to resources.requests of a container
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	ContainerRequests Requests `json:"containerRequests,omitempty"`
+}
+
+type Limits struct {
+	Cpu    string `json:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty"`
+}
+
+type Requests struct {
+	Cpu    string `json:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty"`
 }
 
 // DremioRestServerStatus defines the observed state of DremioRestServer

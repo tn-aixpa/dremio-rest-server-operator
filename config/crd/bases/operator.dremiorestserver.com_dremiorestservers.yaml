@@ -35,6 +35,22 @@ spec:
           spec:
             description: DremioRestServerSpec defines the desired state of DremioRestServer
             properties:
+              containerLimits:
+                description: Corresponds to resources.limits of a container
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
+              containerRequests:
+                description: Corresponds to resources.requests of a container
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
               javaOptions:
                 description: JAVA_TOOL_OPTIONS (on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED
                   is required)

@@ -27,6 +27,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -316,6 +317,23 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 		return nil, errors.New("tables missing from spec")
 	}
 
+	//leave limits and requests empty by default
+	limits := corev1.ResourceList{}
+	if dremiorestserver.Spec.ContainerLimits.Cpu != "" {
+		limits[corev1.ResourceCPU] = resource.MustParse(dremiorestserver.Spec.ContainerLimits.Cpu)
+	}
+	if dremiorestserver.Spec.ContainerLimits.Memory != "" {
+		limits[corev1.ResourceMemory] = resource.MustParse(dremiorestserver.Spec.ContainerLimits.Memory)
+	}
+
+	requests := corev1.ResourceList{}
+	if dremiorestserver.Spec.ContainerRequests.Cpu != "" {
+		requests[corev1.ResourceCPU] = resource.MustParse(dremiorestserver.Spec.ContainerRequests.Cpu)
+	}
+	if dremiorestserver.Spec.ContainerRequests.Memory != "" {
+		requests[corev1.ResourceMemory] = resource.MustParse(dremiorestserver.Spec.ContainerRequests.Memory)
+	}
+
 	ls := labelsForDremioRestServer(dremiorestserver.Name, tag)
 	selectors := selectorsForDremioRestServer(dremiorestserver.Name)
 
@@ -375,7 +393,10 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 						Image:           strings.Join([]string{image, tag}, ":"),
 						Name:            "dremiorestserver",
 						ImagePullPolicy: corev1.PullIfNotPresent,
-						//TODO add Resources?
+						Resources: corev1.ResourceRequirements{
+							Limits:   limits,
+							Requests: requests,
+						},
 						// Ensure restrictive context for the container
 						// More info: https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
 						SecurityContext: &corev1.SecurityContext{
