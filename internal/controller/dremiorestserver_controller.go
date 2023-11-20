@@ -69,12 +69,12 @@ func formatResourceName(resourceName string) string {
 	return strings.Join([]string{"dremiorestserver", resourceName}, "-")
 }
 
-//+kubebuilder:rbac:groups=operator.dremiorestserver.com,namespace=mynamespace,resources=dremiorestservers,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=operator.dremiorestserver.com,namespace=mynamespace,resources=dremiorestservers/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=apps,namespace=mynamespace,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=core,namespace=mynamespace,resources=pods,verbs=get;list;watch
-//+kubebuilder:rbac:groups=core,namespace=mynamespace,resources=services,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=core,namespace=mynamespace,resources=secrets,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=operator.dremiorestserver.com,namespace=dremions,resources=dremiorestservers,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=operator.dremiorestserver.com,namespace=dremions,resources=dremiorestservers/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=apps,namespace=dremions,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,namespace=dremions,resources=pods,verbs=get;list;watch
+//+kubebuilder:rbac:groups=core,namespace=dremions,resources=services,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,namespace=dremions,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

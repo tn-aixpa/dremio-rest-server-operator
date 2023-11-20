@@ -4,7 +4,7 @@ kind: Role
 metadata:
   creationTimestamp: null
   name: manager-role
-  namespace: mynamespace
+  namespace: dremions
 rules:
 - apiGroups:
   - apps

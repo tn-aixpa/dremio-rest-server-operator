@@ -2,6 +2,7 @@ apiVersion: operator.dremiorestserver.com/v1
 kind: DremioRestServer
 metadata:
   name: drs
+  namespace: dremions
 spec:
   javaOptions: --add-opens=java.base/java.nio=ALL-UNNAMED
   tables: postgres.instagram.utenti
