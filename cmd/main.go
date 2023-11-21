@@ -80,7 +80,7 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "leader.postgrest.org",
+		LeaderElectionID:       "leader.dremiorestserver.org",
 		Namespace:              watchNamespace, // namespaced-scope when the value is not an empty string
 	}
 
@@ -101,7 +101,7 @@ func main() {
 	if err = (&controller.DremioRestServerReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("postgrest-controller"),
+		Recorder: mgr.GetEventRecorderFor("dremiorestserver-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "DremioRestServer")
 		os.Exit(1)
