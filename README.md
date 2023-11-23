@@ -8,6 +8,14 @@ operator-sdk init --domain dremiorestserver.com --repo github.com/scc-digitalhub
 operator-sdk create api --group operator --version v1 --kind DremioRestServer --resource --controller
 ```
 
+The environment variables required are:
+
+- `WATCH_NAMESPACE` (an empty value means the operator is running with cluster scope): comma-separated namespaces
+- `DRS_IMAGE`: Dremio REST Server image (defaults to `ghcr.io/scc-digitalhub/dremio-rest-server`)
+- `DRS_IMAGE_TAG`: Dremio REST Server image tag (defaults to `latest`)
+- `DRS_SERVICE_TYPE`: can be either `ClusterIP` or `NodePort` (default)
+- `DRS_DREMIO_URI`: Dremio URI (e.g. `localhost:32010/?useEncryption=false&disableCertificateVerification=true&user=dremio&password=dremio123`)
+
 # dremio-rest-server-operator
 // TODO(user): Add simple overview of use/purpose
 

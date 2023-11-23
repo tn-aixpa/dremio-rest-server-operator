@@ -222,7 +222,14 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 
-		//TODO check update
+		updated := crUpdated(dep, dremiorestserver)
+		if updated {
+			dremiorestserver.Status.State = typeUpdating
+			if err = r.Status().Update(ctx, dremiorestserver); err != nil {
+				log.Error(err, "failed to update DremioRestServer status")
+				return ctrl.Result{}, err
+			}
+		}
 
 		// Deployment ready
 		if dep.Status.ReadyReplicas > 0 {
@@ -250,7 +257,31 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	}
 
-	//TODO typeUpdating
+	if dremiorestserver.Status.State == typeUpdating {
+		log.Info("Updating: deleting previous deployment")
+
+		// Delete deployment
+		deployment := &appsv1.Deployment{}
+		err = r.Get(ctx, types.NamespacedName{Name: formatResourceName(dremiorestserver.Name), Namespace: dremiorestserver.Namespace}, deployment)
+		if err == nil {
+			if err := r.Delete(ctx, deployment); err != nil {
+				log.Error(err, "Failed to clean up deployment")
+			}
+		} else if err != nil && !apierrors.IsNotFound(err) {
+			log.Error(err, "Failed to get deployment")
+			// Return error for reconciliation to be re-trigged
+			return ctrl.Result{}, err
+		}
+
+		// Move to deploying state
+		dremiorestserver.Status.State = typeDeploying
+		if err = r.Status().Update(ctx, dremiorestserver); err != nil {
+			log.Error(err, "failed to update DremioRestServer status")
+			return ctrl.Result{}, err
+		}
+
+		return ctrl.Result{Requeue: true}, nil
+	}
 
 	if dremiorestserver.Status.State == typeError {
 		log.Info("Cleaning up secret, deployment and service")
@@ -298,6 +329,60 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func crUpdated(dep *appsv1.Deployment, cr *operatorv1.DremioRestServer) bool {
+	// Check if CR spec (JavaOptions, Tables, ContainerLimits, ContainerRequests) has been modified
+	for _, env := range dep.Spec.Template.Spec.Containers[0].Env {
+		if env.Name == "JAVA_TOOL_OPTIONS" {
+			// Compare with current JavaOptions
+			if cr.Spec.JavaOptions != env.Value {
+				return true
+			}
+		}
+		if env.Name == "DREMIO_TABLES" {
+			// Compare with current Tables
+			if cr.Spec.Tables != env.Value {
+				return true
+			}
+		}
+	}
+
+	resources := dep.Spec.Template.Spec.Containers[0].Resources
+
+	if cr.Spec.ContainerLimits.Cpu == "" {
+		if !resources.Limits.Cpu().IsZero() {
+			return true
+		}
+	} else if !resources.Limits.Cpu().Equal(resource.MustParse(cr.Spec.ContainerLimits.Cpu)) {
+		return true
+	}
+
+	if cr.Spec.ContainerLimits.Memory == "" {
+		if !resources.Limits.Memory().IsZero() {
+			return true
+		}
+	} else if !resources.Limits.Memory().Equal(resource.MustParse(cr.Spec.ContainerLimits.Memory)) {
+		return true
+	}
+
+	if cr.Spec.ContainerRequests.Cpu == "" {
+		if !resources.Requests.Cpu().IsZero() {
+			return true
+		}
+	} else if !resources.Requests.Cpu().Equal(resource.MustParse(cr.Spec.ContainerRequests.Cpu)) {
+		return true
+	}
+
+	if cr.Spec.ContainerRequests.Memory == "" {
+		if !resources.Requests.Memory().IsZero() {
+			return true
+		}
+	} else if !resources.Requests.Memory().Equal(resource.MustParse(cr.Spec.ContainerRequests.Memory)) {
+		return true
+	}
+
+	return false
 }
 
 // deploymentForDremiorestserver returns a DremioRestServer Deployment object
