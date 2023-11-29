@@ -43,7 +43,6 @@ import (
 const dremioRestServerImage = "DRS_IMAGE"
 const dremioRestServerImageTag = "DRS_IMAGE_TAG"
 const dremioRestServerServiceType = "DRS_SERVICE_TYPE"
-const dremioRestServerUri = "DRS_DREMIO_URI"
 
 // Definitions to manage status conditions
 const (
@@ -502,7 +501,7 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 								ValueFrom: &corev1.EnvVarSource{
 									SecretKeyRef: &corev1.SecretKeySelector{
 										LocalObjectReference: corev1.LocalObjectReference{Name: formatResourceName(dremiorestserver.Name)},
-										Key:                  dremioRestServerUri,
+										Key:                  "dremioUri",
 										Optional:             &[]bool{false}[0],
 									},
 								},
@@ -570,14 +569,42 @@ func (r *DremioRestServerReconciler) serviceForDremiorestserver(dremiorestserver
 }
 
 func (r *DremioRestServerReconciler) secretForDremiorestserver(dremiorestserver *operatorv1.DremioRestServer) (*corev1.Secret, error) {
-	dremioUri, found := os.LookupEnv(dremioRestServerUri)
-	if !found {
-		return nil, fmt.Errorf("dremio URI not specified, environment variable %v is required", dremioRestServerUri)
-	}
-
 	tag, found := os.LookupEnv(dremioRestServerImageTag)
 	if !found {
 		tag = "latest"
+	}
+
+	host := dremiorestserver.Spec.Dremio.Host
+	if host == "" {
+		return nil, fmt.Errorf("dremio host missing from spec")
+	}
+
+	port := dremiorestserver.Spec.Dremio.Port
+	if port == 0 {
+		return nil, fmt.Errorf("dremio port missing from spec")
+	}
+
+	user := dremiorestserver.Spec.Dremio.User
+	password := dremiorestserver.Spec.Dremio.Password
+	jdbcProperties := dremiorestserver.Spec.Dremio.JdbcProperties
+
+	// build Dremio URI
+	dremioRestServerUri := fmt.Sprintf("%v:%v/", host, port)
+
+	str := []string{}
+	if user != "" {
+		str = append(str, fmt.Sprintf("user=%v", user))
+	}
+	if password != "" {
+		str = append(str, fmt.Sprintf("password=%v", password))
+	}
+	if jdbcProperties != "" {
+		str = append(str, jdbcProperties)
+	}
+	queryParams := strings.Join(str, "&")
+
+	if queryParams != "" {
+		dremioRestServerUri += fmt.Sprintf("?%v", queryParams)
 	}
 
 	secret := &corev1.Secret{
@@ -586,7 +613,7 @@ func (r *DremioRestServerReconciler) secretForDremiorestserver(dremiorestserver 
 			Namespace: dremiorestserver.Namespace,
 			Labels:    labelsForDremioRestServer(dremiorestserver.Name, tag),
 		},
-		StringData: map[string]string{dremioRestServerUri: dremioUri},
+		StringData: map[string]string{"dremioUri": dremioRestServerUri},
 	}
 
 	if err := ctrl.SetControllerReference(dremiorestserver, secret, r.Scheme); err != nil {

@@ -14,7 +14,6 @@ The environment variables required are:
 - `DRS_IMAGE`: Dremio REST Server image (defaults to `ghcr.io/scc-digitalhub/dremio-rest-server`)
 - `DRS_IMAGE_TAG`: Dremio REST Server image tag (defaults to `latest`)
 - `DRS_SERVICE_TYPE`: can be either `ClusterIP` or `NodePort` (default)
-- `DRS_DREMIO_URI`: Dremio URI (e.g. `localhost:32010/?useEncryption=false&disableCertificateVerification=true&user=dremio&password=dremio123`)
 
 # dremio-rest-server-operator
 // TODO(user): Add simple overview of use/purpose

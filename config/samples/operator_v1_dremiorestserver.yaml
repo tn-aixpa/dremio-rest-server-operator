@@ -6,6 +6,12 @@ metadata:
 spec:
   javaOptions: --add-opens=java.base/java.nio=ALL-UNNAMED
   tables: postgres.instagram.utenti
+  dremio:
+    host: 192.168.178.120
+    port: 32010
+    user: dremio
+    password: dremio123
+    jdbcProperties: useEncryption=false&disableCertificateVerification=true
   # containerLimits:
   #   cpu: 1000m
   #   memory: 512Mi

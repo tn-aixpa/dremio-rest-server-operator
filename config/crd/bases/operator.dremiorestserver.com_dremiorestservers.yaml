@@ -51,6 +51,22 @@ spec:
                   memory:
                     type: string
                 type: object
+              dremio:
+                properties:
+                  host:
+                    type: string
+                  jdbcProperties:
+                    description: 'Additional JDBC options supported by the Arrow Flight
+                      SQL JDBC driver that will be passed as query parameters (e.g.:
+                      useEncryption=false&disableCertificateVerification=true)'
+                    type: string
+                  password:
+                    type: string
+                  port:
+                    type: integer
+                  user:
+                    type: string
+                type: object
               javaOptions:
                 description: JAVA_TOOL_OPTIONS (on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED
                   is required)

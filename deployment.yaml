@@ -63,6 +63,22 @@ spec:
                   memory:
                     type: string
                 type: object
+              dremio:
+                properties:
+                  host:
+                    type: string
+                  jdbcProperties:
+                    description: 'Additional JDBC options supported by the Arrow Flight
+                      SQL JDBC driver that will be passed as query parameters (e.g.:
+                      useEncryption=false&disableCertificateVerification=true)'
+                    type: string
+                  password:
+                    type: string
+                  port:
+                    type: integer
+                  user:
+                    type: string
+                type: object
               javaOptions:
                 description: JAVA_TOOL_OPTIONS (on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED
                   is required)
@@ -418,10 +434,7 @@ spec:
           value: 0.0.2-SNAPSHOT
         - name: DRS_SERVICE_TYPE
           value: ClusterIP
-        - name: DRS_DREMIO_URI
-          value: 192.168.178.120:32010/?useEncryption=false&disableCertificateVerification=true&user=dremio&password=dremio123
-        #image: dremiorestserver.digitalhub/dremio-rest-server-operator:0.0.1
-        image: dremio-rest-server-operator:0.0.1
+        image: dremiorestserver.digitalhub/dremio-rest-server-operator:0.0.2
         livenessProbe:
           httpGet:
             path: /healthz
