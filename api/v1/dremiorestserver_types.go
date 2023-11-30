@@ -23,15 +23,17 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 // Important: Run "make generate" after modifying this file
 
-// DremioRestServerSpec defines the desired state of DremioRestServer
+// Dremio REST Server properties
 type DremioRestServerSpec struct {
-	// JAVA_TOOL_OPTIONS (on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED is required)
+	// Corresponds to JAVA_TOOL_OPTIONS: on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED is required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	JavaOptions string `json:"javaOptions,omitempty"` // JAVA_TOOL_OPTIONS
 
+	// Comma-separated list of tables to expose
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Tables string `json:"tables,omitempty"` // DREMIO_TABLES (comma-separated)
 
+	// Properties to connect to Dremio
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Dremio DremioProperties `json:"dremio,omitempty"`
 
@@ -63,7 +65,7 @@ type Requests struct {
 	Memory string `json:"memory,omitempty"`
 }
 
-// DremioRestServerStatus defines the observed state of DremioRestServer
+// Dremio REST Server status
 type DremioRestServerStatus struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	State string `json:"state,omitempty" patchStrategy:"merge"`
@@ -72,7 +74,7 @@ type DremioRestServerStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// DremioRestServer is the Schema for the dremiorestservers API
+// Schema for the dremiorestservers API
 type DremioRestServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -83,7 +85,7 @@ type DremioRestServer struct {
 
 //+kubebuilder:object:root=true
 
-// DremioRestServerList contains a list of DremioRestServer
+// List of DremioRestServer
 type DremioRestServerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

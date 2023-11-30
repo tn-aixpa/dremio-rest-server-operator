@@ -30,7 +30,7 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: DremioRestServer is the Schema for the dremiorestservers API
+        description: Schema for the dremiorestservers API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -45,7 +45,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: DremioRestServerSpec defines the desired state of DremioRestServer
+            description: Dremio REST Server properties
             properties:
               containerLimits:
                 description: Corresponds to resources.limits of a container
@@ -64,6 +64,7 @@ spec:
                     type: string
                 type: object
               dremio:
+                description: Properties to connect to Dremio
                 properties:
                   host:
                     type: string
@@ -80,14 +81,15 @@ spec:
                     type: string
                 type: object
               javaOptions:
-                description: JAVA_TOOL_OPTIONS (on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED
-                  is required)
+                description: 'Corresponds to JAVA_TOOL_OPTIONS: on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED
+                  is required'
                 type: string
               tables:
+                description: Comma-separated list of tables to expose
                 type: string
             type: object
           status:
-            description: DremioRestServerStatus defines the observed state of DremioRestServer
+            description: Dremio REST Server status
             properties:
               state:
                 type: string
