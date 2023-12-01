@@ -400,6 +400,7 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 		return nil, errors.New("tables missing from spec")
 	}
 
+	emptyDirSize := resource.MustParse("10Mi")
 	//leave limits and requests empty by default
 	limits := corev1.ResourceList{}
 	if dremiorestserver.Spec.ContainerLimits.Cpu != "" {
@@ -472,10 +473,26 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
 					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "tomcat-tmp",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									SizeLimit: &emptyDirSize,
+								},
+							},
+						},
+					},
 					Containers: []corev1.Container{{
 						Image:           strings.Join([]string{image, tag}, ":"),
 						Name:            "dremiorestserver",
 						ImagePullPolicy: corev1.PullIfNotPresent,
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								MountPath: "/tmp/tomcat",
+								Name:      "tomcat-tmp",
+							},
+						},
 						Resources: corev1.ResourceRequirements{
 							Limits:   limits,
 							Requests: requests,
