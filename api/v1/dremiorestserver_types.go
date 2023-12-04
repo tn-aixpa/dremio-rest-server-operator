@@ -35,7 +35,7 @@ type DremioRestServerSpec struct {
 
 	// Properties to connect to Dremio
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Dremio DremioProperties `json:"dremio,omitempty"`
+	Connection ConnectionProperties `json:"connection,omitempty"`
 
 	// Corresponds to resources.limits of a container
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -46,13 +46,15 @@ type DremioRestServerSpec struct {
 	ContainerRequests Requests `json:"containerRequests,omitempty"`
 }
 
-type DremioProperties struct {
+type ConnectionProperties struct {
 	Host     string `json:"host,omitempty"`
 	Port     int    `json:"port,omitempty"`
 	User     string `json:"user,omitempty"`
 	Password string `json:"password,omitempty"`
 	// Additional JDBC options supported by the Arrow Flight SQL JDBC driver that will be passed as query parameters (e.g.: useEncryption=false&disableCertificateVerification=true)
 	JdbcProperties string `json:"jdbcProperties,omitempty"`
+	// Alternative to password
+	SecretName string `json:"secretName,omitempty"`
 }
 
 type Limits struct {

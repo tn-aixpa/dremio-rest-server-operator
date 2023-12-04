@@ -35,6 +35,26 @@ spec:
           spec:
             description: Dremio REST Server properties
             properties:
+              connection:
+                description: Properties to connect to Dremio
+                properties:
+                  host:
+                    type: string
+                  jdbcProperties:
+                    description: 'Additional JDBC options supported by the Arrow Flight
+                      SQL JDBC driver that will be passed as query parameters (e.g.:
+                      useEncryption=false&disableCertificateVerification=true)'
+                    type: string
+                  password:
+                    type: string
+                  port:
+                    type: integer
+                  secretName:
+                    description: Alternative to password
+                    type: string
+                  user:
+                    type: string
+                type: object
               containerLimits:
                 description: Corresponds to resources.limits of a container
                 properties:
@@ -49,23 +69,6 @@ spec:
                   cpu:
                     type: string
                   memory:
-                    type: string
-                type: object
-              dremio:
-                description: Properties to connect to Dremio
-                properties:
-                  host:
-                    type: string
-                  jdbcProperties:
-                    description: 'Additional JDBC options supported by the Arrow Flight
-                      SQL JDBC driver that will be passed as query parameters (e.g.:
-                      useEncryption=false&disableCertificateVerification=true)'
-                    type: string
-                  password:
-                    type: string
-                  port:
-                    type: integer
-                  user:
                     type: string
                 type: object
               javaOptions:
