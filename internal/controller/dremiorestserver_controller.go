@@ -46,6 +46,13 @@ const dremioRestServerServiceType = "DRS_SERVICE_TYPE"
 
 const dremioUriSecretKey = "dremioUri"
 
+const containerLimitsCpu = "DRS_CONTAINER_LIMITS_CPU"
+const containerLimitsMemory = "DRS_CONTAINER_LIMITS_MEMORY"
+const containerRequestsCpu = "DRS_CONTAINER_REQUESTS_CPU"
+const containerRequestsMemory = "DRS_CONTAINER_REQUESTS_MEMORY"
+
+const genericStatusUpdateFailedMessage = "failed to update DremioRestServer status"
+
 // Definitions to manage status conditions
 const (
 	// Launch deployment and service
@@ -105,7 +112,7 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		log.Info("State unspecified, updating to deploying")
 		dremiorestserver.Status.State = typeDeploying
 		if err = r.Status().Update(ctx, dremiorestserver); err != nil {
-			log.Error(err, "failed to update DremioRestServer status")
+			log.Error(err, genericStatusUpdateFailedMessage)
 			return ctrl.Result{}, err
 		}
 
@@ -127,7 +134,7 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				dremiorestserver.Status.State = typeError
 
 				if err := r.Status().Update(ctx, dremiorestserver); err != nil {
-					log.Error(err, "failed to update DremioRestServer status")
+					log.Error(err, genericStatusUpdateFailedMessage)
 					return ctrl.Result{}, err
 				}
 
@@ -156,7 +163,7 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				dremiorestserver.Status.State = typeError
 
 				if err := r.Status().Update(ctx, dremiorestserver); err != nil {
-					log.Error(err, "failed to update DremioRestServer status")
+					log.Error(err, genericStatusUpdateFailedMessage)
 					return ctrl.Result{}, err
 				}
 
@@ -187,7 +194,7 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				dremiorestserver.Status.State = typeError
 
 				if err := r.Status().Update(ctx, dremiorestserver); err != nil {
-					log.Error(err, "failed to update DremioRestServer status")
+					log.Error(err, genericStatusUpdateFailedMessage)
 					return ctrl.Result{}, err
 				}
 
@@ -206,7 +213,7 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 		dremiorestserver.Status.State = typeRunning
 		if err = r.Status().Update(ctx, dremiorestserver); err != nil {
-			log.Error(err, "failed to update DremioRestServer status")
+			log.Error(err, genericStatusUpdateFailedMessage)
 			return ctrl.Result{}, err
 		}
 
@@ -230,12 +237,15 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 		secret := &corev1.Secret{}
 		err = r.Get(ctx, types.NamespacedName{Name: formatResourceName(dremiorestserver.Name), Namespace: dremiorestserver.Namespace}, secret)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 
 		updated := crUpdated(dep, dremiorestserver, dremioUri, string(secret.Data[dremioUriSecretKey]))
 		if updated {
 			dremiorestserver.Status.State = typeUpdating
 			if err = r.Status().Update(ctx, dremiorestserver); err != nil {
-				log.Error(err, "failed to update DremioRestServer status")
+				log.Error(err, genericStatusUpdateFailedMessage)
 				return ctrl.Result{}, err
 			}
 		}
@@ -244,7 +254,7 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if dep.Status.ReadyReplicas > 0 {
 			log.Info("Deployment is ready")
 			if err = r.Status().Update(ctx, dremiorestserver); err != nil {
-				log.Error(err, "failed to update DremioRestServer status")
+				log.Error(err, genericStatusUpdateFailedMessage)
 				return ctrl.Result{}, err
 			}
 
@@ -257,7 +267,7 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			dremiorestserver.Status.State = typeError
 
 			if err = r.Status().Update(ctx, dremiorestserver); err != nil {
-				log.Error(err, "failed to update DremioRestServer status")
+				log.Error(err, genericStatusUpdateFailedMessage)
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{Requeue: true}, nil
@@ -285,6 +295,9 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// Delete secret
 		secret := &corev1.Secret{}
 		err = r.Get(ctx, types.NamespacedName{Name: formatResourceName(dremiorestserver.Name), Namespace: dremiorestserver.Namespace}, secret)
+		if !apierrors.IsNotFound(err) {
+			log.Error(err, "Something went wrong while retrieving the secret to delete")
+		}
 		if err := r.Delete(ctx, secret); err != nil {
 			log.Error(err, "Failed to clean up secret")
 		}
@@ -292,7 +305,7 @@ func (r *DremioRestServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// Move to deploying state
 		dremiorestserver.Status.State = typeDeploying
 		if err = r.Status().Update(ctx, dremiorestserver); err != nil {
-			log.Error(err, "failed to update DremioRestServer status")
+			log.Error(err, genericStatusUpdateFailedMessage)
 			return ctrl.Result{}, err
 		}
 
@@ -352,7 +365,7 @@ func crUpdated(dep *appsv1.Deployment, cr *operatorv1.DremioRestServer, newDremi
 		return true
 	}
 
-	// Check if CR spec (JavaOptions, Tables, ContainerLimits, ContainerRequests) has been modified
+	// Check if CR spec (JavaOptions, Tables) has been modified
 	for _, env := range dep.Spec.Template.Spec.Containers[0].Env {
 		if env.Name == "JAVA_TOOL_OPTIONS" {
 			// Compare with current JavaOptions
@@ -366,40 +379,6 @@ func crUpdated(dep *appsv1.Deployment, cr *operatorv1.DremioRestServer, newDremi
 				return true
 			}
 		}
-	}
-
-	resources := dep.Spec.Template.Spec.Containers[0].Resources
-
-	if cr.Spec.ContainerLimits.Cpu == "" {
-		if !resources.Limits.Cpu().IsZero() {
-			return true
-		}
-	} else if !resources.Limits.Cpu().Equal(resource.MustParse(cr.Spec.ContainerLimits.Cpu)) {
-		return true
-	}
-
-	if cr.Spec.ContainerLimits.Memory == "" {
-		if !resources.Limits.Memory().IsZero() {
-			return true
-		}
-	} else if !resources.Limits.Memory().Equal(resource.MustParse(cr.Spec.ContainerLimits.Memory)) {
-		return true
-	}
-
-	if cr.Spec.ContainerRequests.Cpu == "" {
-		if !resources.Requests.Cpu().IsZero() {
-			return true
-		}
-	} else if !resources.Requests.Cpu().Equal(resource.MustParse(cr.Spec.ContainerRequests.Cpu)) {
-		return true
-	}
-
-	if cr.Spec.ContainerRequests.Memory == "" {
-		if !resources.Requests.Memory().IsZero() {
-			return true
-		}
-	} else if !resources.Requests.Memory().Equal(resource.MustParse(cr.Spec.ContainerRequests.Memory)) {
-		return true
 	}
 
 	return false
@@ -423,23 +402,29 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 
 	emptyDirSize := resource.MustParse("10Mi")
 
-	//leave limits and requests empty by default
+	// Limits
 	limits := corev1.ResourceList{}
-	if dremiorestserver.Spec.ContainerLimits.Cpu != "" {
-		limits[corev1.ResourceCPU] = resource.MustParse(dremiorestserver.Spec.ContainerLimits.Cpu)
+	limitsCpu, found := os.LookupEnv(containerLimitsCpu)
+	if found {
+		limits[corev1.ResourceCPU] = resource.MustParse(limitsCpu)
 	}
-	if dremiorestserver.Spec.ContainerLimits.Memory != "" {
-		limits[corev1.ResourceMemory] = resource.MustParse(dremiorestserver.Spec.ContainerLimits.Memory)
+	limitsMemory, found := os.LookupEnv(containerLimitsMemory)
+	if found {
+		limits[corev1.ResourceMemory] = resource.MustParse(limitsMemory)
 	}
 
+	// Requests
 	requests := corev1.ResourceList{}
-	if dremiorestserver.Spec.ContainerRequests.Cpu != "" {
-		requests[corev1.ResourceCPU] = resource.MustParse(dremiorestserver.Spec.ContainerRequests.Cpu)
+	requestsCpu, found := os.LookupEnv(containerRequestsCpu)
+	if found {
+		requests[corev1.ResourceCPU] = resource.MustParse(requestsCpu)
 	}
-	if dremiorestserver.Spec.ContainerRequests.Memory != "" {
-		requests[corev1.ResourceMemory] = resource.MustParse(dremiorestserver.Spec.ContainerRequests.Memory)
+	requestsMemory, found := os.LookupEnv(containerRequestsMemory)
+	if found {
+		requests[corev1.ResourceMemory] = resource.MustParse(requestsMemory)
 	}
 
+	// Labels, selectors
 	ls := labelsForDremioRestServer(dremiorestserver.Name, tag)
 	selectors := selectorsForDremioRestServer(dremiorestserver.Name)
 

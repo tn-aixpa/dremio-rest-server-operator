@@ -36,14 +36,6 @@ type DremioRestServerSpec struct {
 	// Properties to connect to Dremio
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Connection ConnectionProperties `json:"connection,omitempty"`
-
-	// Corresponds to resources.limits of a container
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	ContainerLimits Limits `json:"containerLimits,omitempty"`
-
-	// Corresponds to resources.requests of a container
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	ContainerRequests Requests `json:"containerRequests,omitempty"`
 }
 
 type ConnectionProperties struct {
@@ -55,16 +47,6 @@ type ConnectionProperties struct {
 	JdbcProperties string `json:"jdbcProperties,omitempty"`
 	// Alternative to password
 	SecretName string `json:"secretName,omitempty"`
-}
-
-type Limits struct {
-	Cpu    string `json:"cpu,omitempty"`
-	Memory string `json:"memory,omitempty"`
-}
-
-type Requests struct {
-	Cpu    string `json:"cpu,omitempty"`
-	Memory string `json:"memory,omitempty"`
 }
 
 // Dremio REST Server status

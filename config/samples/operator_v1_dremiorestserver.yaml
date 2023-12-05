@@ -9,13 +9,7 @@ spec:
   connection:
     host: 192.168.178.120
     port: 32010
-    user:
-    password:
+    user: dremio
+    password: dremio123
     jdbcProperties: useEncryption=false&disableCertificateVerification=true
-    secretName: mysecret
-  # containerLimits:
-  #   cpu: 1000m
-  #   memory: 512Mi
-  # containerRequests:
-  #   cpu: 200m
-  #   memory: 128Mi
+    secretName: 
