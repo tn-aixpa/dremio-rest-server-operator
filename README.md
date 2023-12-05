@@ -20,12 +20,6 @@ The custom resource's properties are:
 
 - `tables`: **Required**. Comma-separated list of tables to expose
 - `javaOptions`: *Optional*. Corresponds to *JAVA_TOOL_OPTIONS*: on JDK 9+, `--add-opens=java.base/java.nio=ALL-UNNAMED` is required
-- `containerLimits`: *Optional*. K8S resource configuration, limits resources a container can have.
-  - `cpu`: *Optional*, string.
-  - `memory`: *Optional*, string.
-- `containerRequests`: *Optional*. K8S resource configuration, the minimum a container is guaranteed to have.
-  - `cpu`: *Optional*, string.
-  - `memory`: *Optional*, string.
 - `connection`:
   - `host`: **Required**.
   - `port`: *Optional*.
@@ -46,12 +40,6 @@ spec:
     host: 192.168.123.123
     user: dremio
     password: dremio123
-    containerLimits:
-      cpu: 1000m
-      memory: 512Mi
-    containerRequests:
-      cpu: 200m
-      memory: 128Mi
 ```
 
 Another valid sample:
