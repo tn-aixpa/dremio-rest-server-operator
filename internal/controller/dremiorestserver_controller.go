@@ -402,29 +402,6 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 
 	emptyDirSize := resource.MustParse("10Mi")
 
-	// Limits
-	limits := corev1.ResourceList{}
-	limitsCpu, found := os.LookupEnv(containerLimitsCpu)
-	if found {
-		limits[corev1.ResourceCPU] = resource.MustParse(limitsCpu)
-	}
-	limitsMemory, found := os.LookupEnv(containerLimitsMemory)
-	if found {
-		limits[corev1.ResourceMemory] = resource.MustParse(limitsMemory)
-	}
-
-	// Requests
-	requests := corev1.ResourceList{}
-	requestsCpu, found := os.LookupEnv(containerRequestsCpu)
-	if found {
-		requests[corev1.ResourceCPU] = resource.MustParse(requestsCpu)
-	}
-	requestsMemory, found := os.LookupEnv(containerRequestsMemory)
-	if found {
-		requests[corev1.ResourceMemory] = resource.MustParse(requestsMemory)
-	}
-
-	// Labels, selectors
 	ls := labelsForDremioRestServer(dremiorestserver.Name, tag)
 	selectors := selectorsForDremioRestServer(dremiorestserver.Name)
 
@@ -501,8 +478,8 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 							},
 						},
 						Resources: corev1.ResourceRequirements{
-							Limits:   limits,
-							Requests: requests,
+							Limits:   getLimits(),
+							Requests: getRequests(),
 						},
 						// Ensure restrictive context for the container
 						// More info: https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
@@ -709,4 +686,34 @@ func (r *DremioRestServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&operatorv1.DremioRestServer{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
+}
+
+func getLimits() corev1.ResourceList {
+	limits := corev1.ResourceList{}
+
+	limitsCpu, found := os.LookupEnv(containerLimitsCpu)
+	if found {
+		limits[corev1.ResourceCPU] = resource.MustParse(limitsCpu)
+	}
+	limitsMemory, found := os.LookupEnv(containerLimitsMemory)
+	if found {
+		limits[corev1.ResourceMemory] = resource.MustParse(limitsMemory)
+	}
+
+	return limits
+}
+
+func getRequests() corev1.ResourceList {
+	requests := corev1.ResourceList{}
+
+	requestsCpu, found := os.LookupEnv(containerRequestsCpu)
+	if found {
+		requests[corev1.ResourceCPU] = resource.MustParse(requestsCpu)
+	}
+	requestsMemory, found := os.LookupEnv(containerRequestsMemory)
+	if found {
+		requests[corev1.ResourceMemory] = resource.MustParse(requestsMemory)
+	}
+
+	return requests
 }

@@ -420,7 +420,7 @@ spec:
         - name: DRS_IMAGE
           value: ghcr.io/scc-digitalhub/dremio-rest-server
         - name: DRS_IMAGE_TAG
-          value: 0.0.5
+          value: latest
         - name: DRS_SERVICE_TYPE
           value: ClusterIP
         - name: DRS_CONTAINER_LIMITS_CPU
@@ -431,7 +431,7 @@ spec:
           value: 200m
         - name: DRS_CONTAINER_REQUESTS_MEMORY
           value: 128Mi
-        image: ghcr.io/scc-digitalhub/dremio-rest-server-operator:1.0.0
+        image: ghcr.io/scc-digitalhub/dremio-rest-server-operator:latest
         livenessProbe:
           httpGet:
             path: /healthz
