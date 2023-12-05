@@ -45,7 +45,7 @@ type ConnectionProperties struct {
 	Password string `json:"password,omitempty"`
 	// Additional JDBC options supported by the Arrow Flight SQL JDBC driver that will be passed as query parameters (e.g.: useEncryption=false&disableCertificateVerification=true)
 	JdbcProperties string `json:"jdbcProperties,omitempty"`
-	// Alternative to password
+	// Alternative to user and password properties; secret will have to contain USER and PASSWORD
 	SecretName string `json:"secretName,omitempty"`
 }
 

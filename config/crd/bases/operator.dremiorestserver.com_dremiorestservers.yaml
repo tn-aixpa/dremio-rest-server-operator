@@ -50,7 +50,8 @@ spec:
                   port:
                     type: integer
                   secretName:
-                    description: Alternative to password
+                    description: Alternative to user and password properties; secret
+                      will have to contain USER and PASSWORD
                     type: string
                   user:
                     type: string
