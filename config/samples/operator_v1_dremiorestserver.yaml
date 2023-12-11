@@ -4,7 +4,6 @@ metadata:
   name: drs
   namespace: dremio-rest-server-operator-system
 spec:
-  javaOptions: --add-opens=java.base/java.nio=ALL-UNNAMED -Djava.io.tmpdir=/tmp/tomcat -Dserver.tomcat.access-log-enabled=false
   tables: postgres.instagram.utenti
   connection:
     host: 192.168.178.120

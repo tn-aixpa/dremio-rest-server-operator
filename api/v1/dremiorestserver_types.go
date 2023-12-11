@@ -25,10 +25,6 @@ import (
 
 // Dremio REST Server properties
 type DremioRestServerSpec struct {
-	// Corresponds to JAVA_TOOL_OPTIONS: on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED is required
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	JavaOptions string `json:"javaOptions,omitempty"` // JAVA_TOOL_OPTIONS
-
 	// Comma-separated list of tables to expose
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Tables string `json:"tables,omitempty"` // DREMIO_TABLES (comma-separated)

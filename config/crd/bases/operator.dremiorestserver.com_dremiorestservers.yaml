@@ -56,10 +56,6 @@ spec:
                   user:
                     type: string
                 type: object
-              javaOptions:
-                description: 'Corresponds to JAVA_TOOL_OPTIONS: on JDK 9+, --add-opens=java.base/java.nio=ALL-UNNAMED
-                  is required'
-                type: string
               tables:
                 description: Comma-separated list of tables to expose
                 type: string

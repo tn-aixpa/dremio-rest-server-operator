@@ -367,12 +367,6 @@ func crUpdated(dep *appsv1.Deployment, cr *operatorv1.DremioRestServer, newDremi
 
 	// Check if CR spec (JavaOptions, Tables) has been modified
 	for _, env := range dep.Spec.Template.Spec.Containers[0].Env {
-		if env.Name == "JAVA_TOOL_OPTIONS" {
-			// Compare with current JavaOptions
-			if cr.Spec.JavaOptions != env.Value {
-				return true
-			}
-		}
 		if env.Name == "DREMIO_TABLES" {
 			// Compare with current Tables
 			if cr.Spec.Tables != env.Value {
@@ -399,8 +393,6 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 	if dremiorestserver.Spec.Tables == "" {
 		return nil, errors.New("tables missing from spec")
 	}
-
-	emptyDirSize := resource.MustParse("10Mi")
 
 	ls := labelsForDremioRestServer(dremiorestserver.Name, tag)
 	selectors := selectorsForDremioRestServer(dremiorestserver.Name)
@@ -457,26 +449,10 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
 					},
-					Volumes: []corev1.Volume{
-						{
-							Name: "tomcat-tmp",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-									SizeLimit: &emptyDirSize,
-								},
-							},
-						},
-					},
 					Containers: []corev1.Container{{
 						Image:           strings.Join([]string{image, tag}, ":"),
 						Name:            "dremiorestserver",
 						ImagePullPolicy: corev1.PullIfNotPresent,
-						VolumeMounts: []corev1.VolumeMount{
-							{
-								MountPath: "/tmp/tomcat",
-								Name:      "tomcat-tmp",
-							},
-						},
 						Resources: corev1.ResourceRequirements{
 							Limits:   getLimits(),
 							Requests: getRequests(),
@@ -490,13 +466,8 @@ func (r *DremioRestServerReconciler) deploymentForDremiorestserver(
 									"ALL",
 								},
 							},
-							ReadOnlyRootFilesystem: &[]bool{true}[0],
 						},
 						Env: []corev1.EnvVar{
-							{
-								Name:  "JAVA_TOOL_OPTIONS",
-								Value: dremiorestserver.Spec.JavaOptions,
-							},
 							{
 								Name: "DREMIO_URL",
 								ValueFrom: &corev1.EnvVarSource{
@@ -680,7 +651,6 @@ func selectorsForDremioRestServer(name string) map[string]string {
 // SetupWithManager sets up the controller with the Manager.
 // Note that the Deployment will be also watched in order to ensure its
 // desirable state on the cluster
-// TODO add Owns to other resources?
 func (r *DremioRestServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1.DremioRestServer{}).

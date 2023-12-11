@@ -19,7 +19,6 @@ kubectl apply -f config/samples/operator_v1_dremiorestserver.yaml
 The custom resource's properties are:
 
 - `tables`: **Required**. Comma-separated list of tables to expose
-- `javaOptions`: *Optional*. Corresponds to *JAVA_TOOL_OPTIONS*: on JDK 9+, `--add-opens=java.base/java.nio=ALL-UNNAMED` is required
 - `connection`:
   - `host`: **Required**.
   - `port`: *Optional*.
@@ -34,7 +33,6 @@ A valid sample spec configuration is:
 ``` yaml
 ...
 spec:
-  javaOptions: --add-opens=java.base/java.nio=ALL-UNNAMED
   tables: postgres.myschema.mytable
   connection:
     host: 192.168.123.123
@@ -46,7 +44,6 @@ Another valid sample:
 ``` yaml
 ...
 spec:
-  javaOptions: --add-opens=java.base/java.nio=ALL-UNNAMED
   tables: postgres.myschema.mytable
   connection:
     host: 192.168.123.123
