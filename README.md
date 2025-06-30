@@ -3,7 +3,7 @@
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/tn-aixpa/dremio-rest-server-operator/release.yaml?event=release) [![license](https://img.shields.io/badge/license-Apache%202.0-blue)](https://github.com/tn-aixpa/dremio-rest-server-operator/LICENSE) ![GitHub Release](https://img.shields.io/github/v/release/tn-aixpa/dremio-rest-server-operator)
 ![Status](https://img.shields.io/badge/status-stable-gold)
 
-A Kubernetes operator to start instances of [Dremio REST server](https://github.com/scc-digitalhub/dremio-rest-server), that is, some Dremio REST Server custom resources.
+A Kubernetes operator to start instances of [Dremio REST server](https://github.com/tn-aixpa/dremio-rest-server), that is, some Dremio REST Server custom resources.
 
 Explore the full documentation at the [link](https://scc-digitalhub.github.io/docs/).
 
